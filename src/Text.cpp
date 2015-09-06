@@ -163,7 +163,9 @@ void Text::_setText(
 	String::Encoding   encoding,
 	const std::string& str,
 	const std::string& descr,
-	const TextOptions& to
+	const TextOptions& to,
+	const int x,
+	const int y
 ) {
 	if(_init) clear();
 
@@ -193,21 +195,27 @@ void Text::_setText(
 
 	to.setupPangoLayout(layout);
 	
-	Context::instance().drawLayout(this, layout, 0, 0);
+	Context::instance().drawLayout(this, layout, x, y);
 
 	// Get text dimensions and whatnot; we'll accumulate this data after each rendering
 	// to keep it accurate.
 	PangoRectangle rect;
 
-	pango_layout_get_pixel_extents(layout, &rect, 0);
+        // use logical rectangle (not ink rectangle) for positioning
+        pango_layout_get_pixel_extents(layout, 0, &rect);
 
-	_origin.set(-rect.x, rect.y);
-	_size.set(rect.width, rect.height);
+        osg::Vec2::value_type ox = x + rect.x;
+        osg::Vec2::value_type oy = y + rect.y;
+        osg::Vec2::value_type sw = rect.width;
+        osg::Vec2::value_type sh = rect.height;
 
-	// We've run ONCE, so we're initialized to some state. Everything else from
-	// here is based on this position, greater or lower.
-	_init = true;
-	
+	_origin.set(ox, oy);
+	_size.set(sw, sh);
+
+        // We've run ONCE, so we're initialized to some state. Everything else from
+        // here is based on this position, greater or lower.
+        _init = true;
+
 	g_object_unref(layout);
 }
 
